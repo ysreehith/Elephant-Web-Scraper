@@ -43,3 +43,6 @@ venv.bak/
 # Temporary files
 *.tmp
 *.temp
+
+# Data files
+*.csv

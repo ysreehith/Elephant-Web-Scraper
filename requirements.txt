@@ -4,3 +4,5 @@ pandas
 spacy
 lxml
 urllib3
+newspaper3k
+google-generativeai

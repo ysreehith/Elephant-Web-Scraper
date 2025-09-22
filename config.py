@@ -191,6 +191,47 @@ DATE_PATTERNS = [
     r'(\d{4})\.(\d{1,2})\.(\d{1,2})'
 ]
 
+# Gemini API configuration
+GEMINI_API_KEY = None  # Set your API key here or as environment variable
+GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MAX_RETRIES = 3
+GEMINI_TIMEOUT = 30
+
+# Gemini extraction prompt template
+GEMINI_EXTRACTION_PROMPT = """
+You are an expert data extraction specialist. Extract structured information about elephant incidents from the following news article.
+
+Article Text: {article_text}
+Source URL: {url}
+Source Domain: {source}
+
+Please extract the following information and return ONLY a valid JSON object with these exact field names:
+
+{{
+    "Date": "YYYY-MM-DD format or null if not available",
+    "State": "One of: Madhya Pradesh, Chhattisgarh, Telangana, Andhra Pradesh, Maharashtra (or null if not mentioned or not in these states)",
+    "District": "District name or null if not available",
+    "Block": "Block/Tehsil name or null if not available", 
+    "Village": "Village name or null if not available",
+    "No. of Elephants": "Number of elephants involved (integer or null)",
+    "Type of Incident": "Type of incident (e.g., attack, death, crop damage, sighting, etc.) or null",
+    "Human Deaths": "Number of human deaths (integer or null)",
+    "Elephant Deaths": "Number of elephant deaths (integer or null)",
+    "Damage (Crop/Property/Other)": "Type of damage caused or null",
+    "Source": "News source name",
+    "URL": "Article URL"
+}}
+
+Important rules:
+1. Only include states from the specified list: Madhya Pradesh, Chhattisgarh, Telangana, Andhra Pradesh, Maharashtra
+2. If the article is not about these states, set State to null
+3. Focus on incidents from 2000-2025 (last two decades)
+4. Extract numbers as integers, not strings
+5. If information is not available, use null
+6. Return ONLY the JSON object, no additional text or explanation
+7. Ensure the JSON is valid and properly formatted
+"""
+
 # Logging configuration
 LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"

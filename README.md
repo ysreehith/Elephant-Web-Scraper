@@ -1,16 +1,16 @@
-# Elephant Range Extension Research - Manual URL Scraper
+# Elephant Range Extension Research - AI-Powered News Scraper
 
 A specialized scraper for processing manually curated elephant-related news articles from Central India (Madhya Pradesh, Chhattisgarh, Telangana, Andhra Pradesh, Maharashtra) to support research on elephant range extension patterns.
 
 ## Features
 
-- **Manual URL processing**: Process articles from URLs you provide
-- **Multi-site support**: Works with The Hindu, Times of India, Indian Express, and more
-- **Temporal filtering**: Focuses on news reports from 2000-2025 (last two decades)
-- **Intelligent data extraction**: Uses spaCy NLP and regex patterns
+- **File-based URL processing**: Load URLs from text/CSV files (one URL per line)
+- **Newspaper3k integration**: Robust article extraction using newspaper3k library
+- **AI-powered extraction**: Uses Google Gemini API for intelligent data extraction
 - **Structured output**: Generates CSV datasets with standardized fields
-- **Error handling**: Robust handling of network issues and parsing errors
-- **Quality control**: You choose which articles to analyze
+- **Modular design**: Clean, well-commented functions for easy maintenance
+- **Error handling**: Robust handling of network issues and API failures with retry logic
+- **State restriction**: Focuses only on specified Central Indian states
 
 ## Installation
 
@@ -19,33 +19,35 @@ A specialized scraper for processing manually curated elephant-related news arti
    pip install -r requirements.txt
    ```
 
-2. **Install spaCy language model**:
-   ```bash
-   python -m spacy download en_core_web_sm
-   ```
+2. **Set up Gemini API key**:
+   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Set it in `config.py` or as environment variable:
+     ```bash
+     export GEMINI_API_KEY="your_api_key_here"
+     ```
 
 3. **Test the installation**:
    ```bash
-   python test_sample_data.py
+   python scrape_from_file.py
    ```
 
 ## Usage
 
-### Method 1: Interactive URL Input
-```bash
-python manual_url_scraper.py
-```
-- Enter URLs one by one when prompted
-- Press Enter twice when done
-- Scraper processes all URLs and generates CSV
-
-### Method 2: File-Based URL Processing
+### File-Based URL Processing (Recommended)
 ```bash
 python scrape_from_file.py
 ```
 - Create a text file with URLs (one per line)
 - Run the script and specify the filename
-- Scraper processes all URLs from the file
+- Scraper processes all URLs and generates `elephant_dataset.csv`
+
+### Direct Processing
+```bash
+python manual_url_scraper.py
+```
+- Interactive mode for direct URL processing
+- Enter file path containing URLs when prompted
+- Generates structured CSV output
 
 ### Example URL File Format
 Create a text file (e.g., `urls.txt`) with URLs:
@@ -58,45 +60,61 @@ https://indianexpress.com/article/india/elephant-herd-enters-village-12345678/
 
 ## Output Format
 
-The scraper generates CSV files with the following columns:
+The scraper generates `elephant_dataset.csv` with the following columns:
 
 | Column | Description |
 |--------|-------------|
-| Date | Publication date |
-| State | Indian state (extracted via NLP) |
-| District | District name (extracted via NLP) |
-| Block | Block/Tehsil name (extracted via NLP) |
-| Village | Village name (extracted via NLP) |
-| No. of Elephants | Number of elephants mentioned |
-| Type of Incident | Type of incident (sighting, conflict, etc.) |
-| Human Deaths | Number of human deaths |
-| Elephant Deaths | Number of elephant deaths |
+| Date | Publication date (YYYY-MM-DD format) |
+| State | Indian state (restricted to: Madhya Pradesh, Chhattisgarh, Telangana, Andhra Pradesh, Maharashtra) |
+| District | District name |
+| Block | Block/Tehsil name |
+| Village | Village name |
+| No. of Elephants | Number of elephants involved (integer) |
+| Type of Incident | Type of incident (attack, death, crop damage, sighting, etc.) |
+| Human Deaths | Number of human deaths (integer) |
+| Elephant Deaths | Number of elephant deaths (integer) |
 | Damage (Crop/Property/Other) | Type of damage caused |
-| Source | News source (the_hindu, times_of_india) |
+| Source | News source name |
 | URL | Article URL |
 
 ## Data Extraction Methods
 
+### Article Fetching
+- Uses **newspaper3k** library for robust article extraction
+- Automatically extracts headline, publication date, and full article text
+- Handles various news website formats and structures
+- Includes error handling and retry logic for failed downloads
+
+### AI-Powered Data Extraction
+- Uses **Google Gemini API** (gemini-pro model) for intelligent data extraction
+- Sends article text to Gemini with structured prompts
+- Extracts all required fields in JSON format
+- Includes retry logic for API failures
+
+### State Restriction
+- Only processes articles from specified Central India states:
+  - Madhya Pradesh
+  - Chhattisgarh  
+  - Telangana
+  - Andhra Pradesh
+  - Maharashtra
+- Articles from other states are filtered out
+
 ### Temporal Filtering
-- Automatically filters articles to 2000-2025 timeframe
+- Automatically filters articles to 2000-2025 timeframe (last two decades)
 - Supports various date formats commonly found in news articles
-- Configurable temporal scope via `config.py`
+- Configurable temporal scope via `config.py` (START_YEAR, END_YEAR, FILTER_BY_DATE)
 - Skips articles outside the specified date range
 
-### Location Extraction
-- Uses spaCy Named Entity Recognition (NER)
-- Recognizes Central India states: Madhya Pradesh, Chhattisgarh, Telangana, Andhra Pradesh, Maharashtra
-- Identifies districts, villages, blocks, and tehsils within these states
+## Modular Functions
 
-### Numeric Data Extraction
-- Regex patterns for elephant counts
-- Human and elephant death counts
-- Damage quantification
+The scraper is built with clean, modular functions:
 
-### Incident Classification
-- Keyword-based incident type detection
-- Damage type categorization
-- Conflict severity assessment
+- `load_urls(file_path)`: Load URLs from text/CSV file
+- `fetch_article(url)`: Fetch article content using newspaper3k
+- `extract_with_gemini(text, url, source)`: Extract structured data using Gemini API
+- `save_to_csv(data, filename)`: Save extracted data to CSV file
+- `process_urls_from_file(file_path, output_filename)`: Main processing function
 
 ## Supported News Sources
 
