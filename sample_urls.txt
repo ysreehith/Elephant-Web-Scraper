@@ -1,15 +1,4 @@
-# Sample Elephant News Article URLs
-# Add your article URLs here, one per line
-# Lines starting with # are comments and will be ignored
-
-# Example URLs (these are just examples - replace with real URLs):
 https://timesofindia.indiatimes.com/city/bhopal/4-more-jumbos-die-of-poisoning-in-madhya-pradeshs-bandhavgarh-toll-eight/articleshow/114801025.cms
 https://indianexpress.com/article/india/fear-and-anger-in-villages-of-mps-shahdol-after-wild-elephants-kill-3-10016612/
 https://indianexpress.com/article/india/mp-elephant-death-toll-climbs-bandhavgarh-tiger-reserve-9646402/
 https://www.thehindu.com/news/national/telangana/elephant-which-strayed-into-telangana-kills-another-farmer/article68027202.ece
-
-# Instructions:
-# 1. Replace the example URLs above with real elephant-related article URLs
-# 2. Save this file
-# 3. Run: python scrape_from_file.py
-# 4. Enter filename: sample_urls.txt

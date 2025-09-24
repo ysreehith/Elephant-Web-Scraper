@@ -191,8 +191,15 @@ def extract_with_gemini(text: str, url: str, source: str) -> Optional[Dict]:
             source=source
         )
         
-        # Initialize the model
-        model = genai.GenerativeModel(GEMINI_MODEL)
+        # Initialize the model with JSON response enforced
+        model = genai.GenerativeModel(
+            GEMINI_MODEL,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.1,
+                max_output_tokens=1000,
+                response_mime_type="application/json"
+            )
+        )
         
         # Retry logic
         for attempt in range(GEMINI_MAX_RETRIES):
@@ -200,24 +207,40 @@ def extract_with_gemini(text: str, url: str, source: str) -> Optional[Dict]:
                 logger.info(f"Extracting data with Gemini (attempt {attempt + 1}/{GEMINI_MAX_RETRIES})")
                 
                 # Generate content
-                response = model.generate_content(
-                    prompt,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.1,  # Low temperature for consistent extraction
-                        max_output_tokens=1000,
-                    )
-                )
+                response = model.generate_content(prompt)
                 
                 # Extract JSON from response
                 response_text = response.text.strip()
                 
-                # Try to find JSON in the response
-                json_start = response_text.find('{')
-                json_end = response_text.rfind('}') + 1
+                # Strip markdown code fences if present
+                if response_text.startswith("```"):
+                    # remove the first fence line and last fence line
+                    lines = response_text.splitlines()
+                    # drop first line
+                    lines = lines[1:]
+                    # if last line is a fence, drop it
+                    if lines and lines[-1].strip().startswith("```"):
+                        lines = lines[:-1]
+                    response_text = "\n".join(lines).strip()
                 
-                if json_start != -1 and json_end > json_start:
-                    json_text = response_text[json_start:json_end]
-                    extracted_data = json.loads(json_text)
+                # Try to find JSON in the response - be more aggressive about finding complete JSON
+                json_start = response_text.find('{')
+                if json_start != -1:
+                    # Find the matching closing brace by counting braces
+                    brace_count = 0
+                    json_end = -1
+                    for i, char in enumerate(response_text[json_start:], json_start):
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_end = i + 1
+                                break
+                    
+                    if json_end > json_start:
+                        json_text = response_text[json_start:json_end]
+                        extracted_data = json.loads(json_text)
                     
                     # Validate required fields
                     required_fields = [
@@ -236,9 +259,37 @@ def extract_with_gemini(text: str, url: str, source: str) -> Optional[Dict]:
                     return extracted_data
                 else:
                     logger.warning(f"No valid JSON found in Gemini response: {response_text[:200]}...")
+                    logger.debug(f"Full response text: {response_text}")
                     
             except json.JSONDecodeError as e:
                 logger.warning(f"JSON decode error (attempt {attempt + 1}): {str(e)}")
+                logger.debug(f"Failed JSON text: {json_text if 'json_text' in locals() else 'N/A'}")
+                
+                # Try a more aggressive approach - find the first complete JSON object
+                if 'json_text' in locals():
+                    # Try to find the first complete JSON by looking for the first { and its matching }
+                    first_brace = json_text.find('{')
+                    if first_brace != -1:
+                        brace_count = 0
+                        end_pos = -1
+                        for i, char in enumerate(json_text[first_brace:], first_brace):
+                            if char == '{':
+                                brace_count += 1
+                            elif char == '}':
+                                brace_count -= 1
+                                if brace_count == 0:
+                                    end_pos = i + 1
+                                    break
+                        
+                        if end_pos > first_brace:
+                            try:
+                                clean_json = json_text[first_brace:end_pos]
+                                extracted_data = json.loads(clean_json)
+                                logger.info("Successfully extracted structured data with fallback JSON parsing")
+                                return extracted_data
+                            except json.JSONDecodeError:
+                                pass
+                
                 if attempt < GEMINI_MAX_RETRIES - 1:
                     time.sleep(2)  # Wait before retry
                     continue

@@ -199,13 +199,17 @@ GEMINI_TIMEOUT = 30
 
 # Gemini extraction prompt template
 GEMINI_EXTRACTION_PROMPT = """
+CRITICAL: Respond ONLY with a valid JSON object. No explanations, no markdown, no code fences, no additional text.
+
 You are an expert data extraction specialist. Extract structured information about elephant incidents from the following news article.
 
 Article Text: {article_text}
 Source URL: {url}
 Source Domain: {source}
 
-Please extract the following information and return ONLY a valid JSON object with these exact field names:
+Respond ONLY in JSON. Do not include any prose, explanations, or markdown. Do not wrap the JSON in code fences. Output must be a single JSON object.
+
+Please extract the following information with these exact field names:
 
 {{
     "Date": "YYYY-MM-DD format or null if not available",
@@ -228,7 +232,7 @@ Important rules:
 3. Focus on incidents from 2000-2025 (last two decades)
 4. Extract numbers as integers, not strings
 5. If information is not available, use null
-6. Return ONLY the JSON object, no additional text or explanation
+6. Respond ONLY in JSON with no surrounding text or code blocks
 7. Ensure the JSON is valid and properly formatted
 """
 
